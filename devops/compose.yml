@@ -1,0 +1,74 @@
+version: "3.8"
+
+x-common-env-variables: &common-env-variables
+  ENCRYPT_SECRET_KEY: "${ENCRYPT_SECRET_KEY}"
+  JWT_SECRET_KEY: "${JWT_SECRET_KEY}"
+  DB_USERNAME: "${DB_USERNAME}"
+  DB_PASSWORD: "${DB_PASSWORD}"
+  DB_HOST: "${DB_HOST}"
+  DB_PORT: ${DB_PORT} 
+  DB_NAME: "${DB_NAME}"
+
+services:
+  accounts:
+    container_name: aline-accounts
+    image: 239153380322.dkr.ecr.us-west-1.amazonaws.com/cm-account-microservice:latest
+    ports:
+      - "8070:8070"
+    networks:
+      - aline-network
+    environment: 
+      <<: *common-env-variables
+      APP_PORT: 8070
+  banks:
+    container_name: aline-banks
+    image: 239153380322.dkr.ecr.us-west-1.amazonaws.com/cm-bank-microservice:broken
+    ports:
+      - "8071:8071"
+    networks:
+      - aline-network
+    environment: 
+      <<: *common-env-variables
+      APP_PORT: 8071
+  cards:
+     container_name: aline-cards
+     image: 239153380322.dkr.ecr.us-west-1.amazonaws.com/cm-card-microservice:latest
+     ports:
+       - "8072:8072"
+     networks:
+       - aline-network
+     environment: 
+       <<: *common-env-variables
+       APP_PORT: 8072
+  transactions:
+     container_name: aline-transactions
+     image: 239153380322.dkr.ecr.us-west-1.amazonaws.com/cm-transaction-microservice:latest
+     ports:
+       - "8073:8073"
+     networks:
+       - aline-network
+     environment: 
+       <<: *common-env-variables
+       APP_PORT: 8073
+  underwriter:
+     container_name: aline-underwriter
+     image: 239153380322.dkr.ecr.us-west-1.amazonaws.com/cm-underwriter-microservice:latest
+     ports:
+       - "8074:8074"
+     networks:
+       - aline-network
+     environment: 
+       <<: *common-env-variables
+       APP_PORT: 8074
+  users:
+     container_name: aline-users
+     image: 239153380322.dkr.ecr.us-west-1.amazonaws.com/cm-user-microservice:latest
+     ports:
+       - "8075:8075"
+     networks:
+       - aline-network
+     environment: 
+       <<: *common-env-variables
+       APP_PORT: 8075
+networks:
+  aline-network:

@@ -1,0 +1,32 @@
+pipeline {
+    agent any
+
+    tools {
+        nodejs "node"
+    }
+
+    stages {
+        stage('SCM') {
+            steps {
+                checkout scm
+                sh 'npm install'
+            }
+            
+        }
+        stage('Test') {
+            steps{
+                sh "npm test"
+            }
+        }
+        stage('Build') {
+            steps {
+                sh 'npm run build'
+            }
+            post {
+                success {
+                    archiveArtifacts artifacts: 'build/**/*', followSymlinks: false
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,54 @@
+pipeline {
+    environment {
+        registry = "https://239153380322.dkr.ecr.us-west-1.amazonaws.com/"
+        registryCredential = "ecr:us-west-1:cm-aws-credentials"
+        imageName="cm-bank-microservice"
+        aws_creds = credentials('cm-aws-credentials')
+        commitId = sh(returnStdout: true, script: 'git rev-parse HEAD').take(6)
+    }
+    agent any
+    tools {
+        // Install the Maven version configured as "M3" and add it to the path.
+        maven "M3"
+        'org.jenkinsci.plugins.docker.commons.tools.DockerTool' 'docker'
+    }
+    stages {
+        stage('Test') {
+            steps{
+                sh "mvn clean test"
+                snykSecurity severity: 'medium', snykInstallation: 'snyk', snykTokenId: 'snyk-token', additionalArguments: '--maven-aggregate-project'
+            }
+        }
+        /tage('SonarQube Analysis') {
+            steps{
+                withSonarQubeEnv('SQ') {
+                    sh "mvn clean verify sonar:sonar -Dsonar.projectKey=aline"
+                }
+            }
+        }
+        stage('Quality Gate') {
+            steps {
+                waitForQualityGate abortPipeline: true
+            }
+        }
+        stage('Build') {
+            steps {
+                sh "mvn package -Dmaven.test.skip"
+                script {
+                    docker.withRegistry(registry, registryCredential) {
+                        def customImage = docker.build(imageName)
+                        customImage.push("${env.commitId}")
+                        customImage.push('latest')
+                        customImage.push("${env.BUILD_ID}")
+                    }
+                }
+            }
+        }
+        stage('Cleanup') {
+            steps{
+                sh 'docker system prune -a --volumes -f'
+                cleanWs()
+            }
+        }
+    }
+}

@@ -1,0 +1,163 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  annotations:
+    openshift.io/generated-by: OpenShiftNewApp
+  creationTimestamp: null
+  labels:
+    app: transaction-microservice
+    app.kubernetes.io/component: transaction-microservice
+    app.kubernetes.io/instance: transaction-microservice
+  name: transaction-microservice
+spec:
+  lookupPolicy:
+    local: false
+status:
+  dockerImageRepository: ""
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  annotations:
+    openshift.io/generated-by: OpenShiftNewApp
+  creationTimestamp: null
+  labels:
+    app: transaction-microservice
+    app.kubernetes.io/component: transaction-microservice
+    app.kubernetes.io/instance: transaction-microservice
+  name: transaction-microservice
+spec:
+  nodeSelector: null
+  output:
+    to:
+      kind: ImageStreamTag
+      name: transaction-microservice:latest
+  postCommit: {}
+  resources: {}
+  source:
+    git:
+      ref: develop
+      uri: https://git1.smoothstack.com/cohorts/2022/organizations/prestige-worldwide/chris-mckelvy/transaction-microservice.git
+    sourceSecret:
+      name: git
+    type: Git
+  strategy:
+    sourceStrategy:
+      env:
+      - name: ARTIFACT_DIR
+        value: transaction-microservice/target
+      from:
+        kind: ImageStreamTag
+        name: java:openjdk-8-ubi8
+        namespace: openshift
+    type: Source
+  triggers:
+  - github:
+      secret: 5B3Oa1wFqMb-tcTW5D1S
+    type: GitHub
+  - generic:
+      secret: WF0cP7gd_scXEsCriyXp
+    type: Generic
+  - type: ConfigChange
+  - imageChange: {}
+    type: ImageChange
+status:
+  lastVersion: 0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    image.openshift.io/triggers: '[{"from":{"kind":"ImageStreamTag","name":"transaction-microservice:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"transaction-microservice\")].image"}]'
+    openshift.io/generated-by: OpenShiftNewApp
+  creationTimestamp: null
+  labels:
+    app: transaction-microservice
+    app.kubernetes.io/component: transaction-microservice
+    app.kubernetes.io/instance: transaction-microservice
+  name: transaction-microservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      deployment: transaction-microservice
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        openshift.io/generated-by: OpenShiftNewApp
+      creationTimestamp: null
+      labels:
+        deployment: transaction-microservice
+    spec:
+      containers:
+      - env:
+        - name: APP_PORT
+          value: "8080"
+        - name: DB_HOST
+          value: mysql
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql
+              key: database-name
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql
+              key: database-root-password
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_USERNAME
+          value: root
+        - name: ENCRYPT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret-keys
+              key: ENCRYPT_SECRET_KEY
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret-keys
+              key: JWT_SECRET_KEY
+        image: ' '
+        name: transaction-microservice
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        - containerPort: 8443
+          protocol: TCP
+        - containerPort: 8778
+          protocol: TCP
+        resources: {}
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    openshift.io/generated-by: OpenShiftNewApp
+  creationTimestamp: null
+  labels:
+    app: transaction-microservice
+    app.kubernetes.io/component: transaction-microservice
+    app.kubernetes.io/instance: transaction-microservice
+  name: transaction-microservice
+spec:
+  ports:
+  - name: 8080-tcp
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  - name: 8443-tcp
+    port: 8443
+    protocol: TCP
+    targetPort: 8443
+  - name: 8778-tcp
+    port: 8778
+    protocol: TCP
+    targetPort: 8778
+  selector:
+    deployment: transaction-microservice
+status:
+  loadBalancer: {}

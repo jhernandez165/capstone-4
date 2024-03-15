@@ -1,0 +1,47 @@
+---
+- hosts: 127.0.0.1
+  connection: local
+  tasks:
+  - name: converting outputs to ansible compatible yaml
+    shell: |
+      terraform -chdir=../terraform init
+      terraform -chdir=../terraform output > output.yml
+      sed -i 's/ =/:/' output.yml
+      sed -i 's/'$'\u001b''//g' output.yml
+  - include_vars: output.yml
+  - name: make sure kubectl is configured to reach the cluster
+    shell: aws eks --region {{ region }} update-kubeconfig --name {{project}}-cluster
+  - name: Deleting k8s APP
+    shell: kubectl delete all --all -A --force
+  - name: removing IRSA
+    shell: eksctl delete iamserviceaccount --region={{region}} --name {{project}}-cluster-account --cluster {{project}}-cluster
+  - name: resetting configs to original state
+    args: 
+      chdir: "../k8s"
+    shell: |
+      sed -i 's/{{project}}-cluster-account/replace_sa_name/' * || true
+      sed -i 's/{{secret_name}}/replace_secret_name/' aws-secret.yaml || true
+  - name: Deleting secret manually because terraform has dependency issues
+    shell: aws secretsmanager delete-secret --region {{ region }} --secret-id {{secret_name}} --force-delete-without-recovery
+  - name: Sleep for 5 seconds
+    wait_for:
+      delay: 5
+      timeout: 0
+  - name: Deleting policy manually because of terraform dependency issues
+    shell: aws iam delete-policy --region {{ region }} --policy-arn {{secret_policy_arn}}
+  - name: Remove secret from terraform state
+    args: 
+      chdir: "../terraform"
+    shell: |
+      terraform state rm aws_secretsmanager_secret.aline_secret
+      terraform state rm aws_secretsmanager_secret_version.secret_val
+  - name: Sleep for 5 seconds
+    wait_for:
+      delay: 5
+      timeout: 0
+  - name: Deleting Terraform Infra
+    community.general.terraform:
+      project_path: '../terraform'
+      state: absent
+  - name: Deleting output.yml
+    shell: rm output.yml

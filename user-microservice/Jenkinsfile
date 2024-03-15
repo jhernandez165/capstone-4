@@ -1,0 +1,57 @@
+pipeline {
+    environment {
+        registry = "https://412032026508.dkr.ecr.us-west-2.amazonaws.com/"
+        registryCredential = "ecr:us-west-2:cm-aws-credentials"
+        imageName="cm-user-microservice"
+        aws_creds = credentials('cm-aws-credentials')
+        commitId = sh(returnStdout: true, script: 'git rev-parse HEAD').take(6)
+    }
+    agent any
+    tools {
+        // Install the Maven version configured as "M3" and add it to the path.
+        maven "M3"
+        'org.jenkinsci.plugins.docker.commons.tools.DockerTool' 'docker'
+    }
+    stages {
+        stage('Test') {
+            steps{
+                sh "mvn clean test"
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps{
+                withSonarQubeEnv('SQ') {
+                    sh "mvn clean verify sonar:sonar -Dsonar.projectKey=aline"
+                }
+            }
+        }
+        stage('Quality Gate') {
+            steps {
+                waitForQualityGate abortPipeline: true
+            }
+        }
+        stage('Build') {
+            steps {
+                sh "mvn package -Dmaven.test.skip"
+                script {
+                    docker.withRegistry(registry, registryCredential) {
+                        def customImage = docker.build(imageName)
+                        customImage.push("${env.commitId}")
+                        customImage.push('latest')
+                        customImage.push("${env.BUILD_ID}")
+					    sh 'docker run \
+                        -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+                        412032026508.dkr.ecr.us-west-2.amazonaws.com/cm-k8s:latest \
+                        kubectl set image deployment/users users=412032026508.dkr.ecr.us-west-2.amazonaws.com/cm-user-microservice:$commitId'
+                    }
+                }
+            }
+        }
+        stage('Cleanup') {
+            steps{
+                sh 'docker system prune -a --volumes -f'
+                cleanWs()
+            }
+        }
+    }
+}

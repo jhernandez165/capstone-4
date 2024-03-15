@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubecost-ingress
+  namespace: kubecost
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+    - host: a49870ec3a26e4cc9a3f2779ecad74e1-e8b245808513e7fa.elb.us-west-1.amazonaws.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cost-analyzer-cost-analyzer
+                port:
+                  number: 9090

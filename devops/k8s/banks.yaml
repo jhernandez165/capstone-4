@@ -1,0 +1,116 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: banks
+spec:
+  selector:
+    matchLabels:
+      app: banks
+  strategy:
+    canary: 
+      stableService: banks-service
+      canaryService: banks-service-preview
+      trafficRouting:
+        nginx:
+          stableIngress: bank-ingress
+      steps:
+      - setWeight: 10
+      - pause: 
+          duration: 6h
+      - setWeight: 60
+      - pause: {}
+  template:
+    metadata:
+      labels:
+        app: banks
+    spec:
+      serviceAccountName: cm-tf-eks-cluster-account
+      containers:
+      - image: 239153380322.dkr.ecr.us-west-1.amazonaws.com/cm-bank-microservice:latest
+        name: banks
+        volumeMounts:
+        - name: secrets-store-inline
+          mountPath: "/mnt/secrets"
+          readOnly: true
+        resources:
+          requests:
+            memory: "275Mi"
+            cpu: "125m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        env:
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: aline-secret
+              key: db-user
+              optional: false
+        - name: APP_PORT
+          value: '80'
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aline-secret
+              key: db-pass
+              optional: false
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: aline-secret
+              key: db-host
+              optional: false
+        - name: DB_PORT
+          value: '3306'
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: aline-secret
+              key: db-name
+              optional: false
+        - name: ENCRYPT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aline-secret
+              key: encrypt-key
+              optional: false
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aline-secret
+              key: jwt-key
+              optional: false
+        ports:
+        - containerPort: 80
+          name: banks
+      volumes:
+      - name: secrets-store-inline
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: aws-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: banks-service
+  labels:
+    app: banks
+spec:
+  ports:
+  - port: 80
+  selector:
+    app: banks
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: banks-service-preview
+  labels:
+    app: banks
+spec:
+  ports:
+  - port: 80
+  selector:
+    app: banks

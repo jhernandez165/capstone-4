@@ -1,0 +1,102 @@
+pipeline {
+    environment {
+        aws_creds = credentials('cm-aws-credentials')
+		AWS_REGION = "us-west-1"
+        AWS_DEFAULT_REGION = "us-west-1"
+        DB_USERNAME = credentials("DB_USERNAME")
+        DB_PASSWORD = credentials("DB_PASSWORD")
+        DB_HOST = credentials("ECS_DB_HOST")
+        DB_NAME = credentials("DB_NAME")
+        ENCRYPT_SECRET_KEY = credentials("ENCRYPT_SECRET_KEY")
+        JWT_SECRET_KEY = credentials("JWT_SECRET_KEY")
+        DB_PORT=3306
+        TF_VAR_aws_access_key=credentials("cm-aws-access-key")
+        TF_VAR_aws_secret_key=credentials("cm-aws-secret-key")
+    }
+    agent any
+    tools {
+        
+        'terraform' 'Terraform'
+        'go' 'go'
+    }
+    stages {
+        stage("TFLint"){
+            steps{
+                dir("terraform"){
+                    sh "curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash"
+                    sh "tflint --init"
+                    sh "tflint"
+                }
+            }
+        }
+        stage("Terratest"){
+            steps{
+                dir("terraform/test"){
+                    sh "go test -v -timeout 30m"
+                }
+            }
+        }
+        stage("AWX") {
+            steps{
+                ansibleTower(
+                    jobTemplate: 'Deploy',
+                    jobType: 'run',
+                    throwExceptionWhenFail: false,
+                    towerCredentialsId: 'awx-creds',
+                    towerLogLevel: 'full',
+                    towerServer: 'awx',
+                    verbose: true
+                )
+            }
+        }
+        stage('Update image tags') {
+            steps {
+                script {
+                    def accountsBuild = sh(script: "aws ecr describe-images --region us-west-2 --output json --repository-name \
+                        cm-account-microservice --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' | sed 's/^.\\(.*\\).\$/\\1/'", returnStdout: true).trim()
+                    def banksBuild = sh(script: "aws ecr describe-images --region us-west-2 --output json --repository-name \
+                        cm-bank-microservice --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' | sed 's/^.\\(.*\\).\$/\\1/'", returnStdout: true).trim()
+                    def cardsBuild = sh(script: "aws ecr describe-images --region us-west-2 --output json --repository-name \
+                        cm-card-microservice --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' | sed 's/^.\\(.*\\).\$/\\1/'", returnStdout: true).trim()
+                    def transactionsBuild = sh(script: "aws ecr describe-images --region us-west-2 --output json --repository-name \
+                        cm-transaction-microservice --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' | sed 's/^.\\(.*\\).\$/\\1/'", returnStdout: true).trim()
+                    def underwriterBuild = sh(script: "aws ecr describe-images --region us-west-2 --output json --repository-name \
+                        cm-underwriter-microservice --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' | sed 's/^.\\(.*\\).\$/\\1/'", returnStdout: true).trim()
+                    def usersBuild = sh(script: "aws ecr describe-images --region us-west-2 --output json --repository-name \
+                        cm-user-microservice --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' | sed 's/^.\\(.*\\).\$/\\1/'", returnStdout: true).trim()
+                    sh "sed -i 's/replace_accounts/$accountsBuild/' compose.yml"
+                    sh "sed -i 's/replace_banks/$banksBuild/' compose.yml"
+                    sh "sed -i 's/replace_cards/$cardsBuild/' compose.yml"
+                    sh "sed -i 's/replace_transactions/$transactionsBuild/' compose.yml"
+                    sh "sed -i 's/replace_underwriter/$underwriterBuild/' compose.yml"
+                    sh "sed -i 's/replace_users/$usersBuild/' compose.yml"
+                }
+            }
+        }
+        stage("Compose Up"){
+            steps{
+                sh "aws cloudformation wait stack-update-complete --region us-west-1 --stack-name cm-aline"
+                sh 'docker build -t cm-compose --build-arg accesskey=$AWS_ACCESS_KEY_ID --build-arg secretkey=$AWS_SECRET_ACCESS_KEY .'
+                sh 'docker run \
+                -a STDOUT \
+                -a STDERR \
+                -e AWS_REGION=$AWS_REGION \
+                -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
+                -e DB_USERNAME=$DB_USERNAME \
+                -e DB_PASSWORD=$DB_PASSWORD \
+                -e DB_HOST=$DB_HOST \
+                -e DB_NAME=$DB_NAME \
+                -e ENCRYPT_SECRET_KEY=$ENCRYPT_SECRET_KEY \
+                -e JWT_SECRET_KEY=$JWT_SECRET_KEY \
+                -e DB_PORT=3306 \
+                cm-compose'
+            }
+        }
+    }
+    post {
+        always {
+            sh 'docker system prune -a --volumes -f'
+            cleanWs()
+        }
+    }
+}

@@ -1,0 +1,9 @@
+---
+version: 1
+dependencies:
+  galaxy: requirements.yml
+  system: bindep.txt
+additional_build_steps:
+  append:
+    - ADD run.sh /run.sh
+    - RUN sh /run.sh

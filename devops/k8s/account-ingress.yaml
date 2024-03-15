@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: account-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/affinity-mode: persistent
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /accounts
+            pathType: Prefix
+            backend:
+              service:
+                name: accounts-service
+                port:
+                  number: 80
+          - path: /members/*/accounts
+            pathType: Exact
+            backend:
+              service:
+                name: accounts-service
+                port:
+                  number: 80

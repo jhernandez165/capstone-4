@@ -1,0 +1,34 @@
+service: auto-cleanup-web
+
+custom:
+  log_level: INFO # DEBUG for dev | INFO for prod
+  region: ${opt:region, "ap-southeast-2"} # AWS deployment region
+  client:
+    bucketName: ${self:service}-${self:provider.stage}-site-${cf:auto-cleanup-api-${self:provider.stage}.AccountID}
+    distributionFolder: ./src
+    sse: AES256
+
+provider:
+  name: aws
+  stage: ${opt:stage, "prod"} # overwrite via CLI "--stage dev"
+  region: ${self:custom.region}
+
+package:
+  individually: true
+  patterns:
+    - "!node_modules/**"
+
+resources:
+  Resources:
+    WebBucket:
+      Type: AWS::S3::Bucket
+      DeletionPolicy: Retain
+      Properties:
+        BucketName: ${self:service}-${self:provider.stage}-site-${cf:auto-cleanup-api-${self:provider.stage}.AccountID}
+        BucketEncryption:
+          ServerSideEncryptionConfiguration:
+            - ServerSideEncryptionByDefault:
+                SSEAlgorithm: AES256
+
+plugins:
+  - serverless-finch

@@ -1,0 +1,288 @@
+{
+    "containerDefinitions": [
+        {
+            "environment": [
+                {
+                    "name": "ENCRYPT_SECRET_KEY",
+                    "value": "${ENCRYPT_SECRET_KEY}"
+                },
+                {
+                    "name": "JWT_SECRET_KEY",
+                    "value": "${JWT_SECRET_KEY}"
+                },
+                {
+                    "name": "DB_USERNAME",
+                    "value": "${DB_USERNAME}"
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "value": "${DB_PASSWORD}"
+                },
+                {
+                    "name": "DB_HOST",
+                    "value": "${DB_HOST}"
+                },
+                {
+                    "name": "DB_PORT",
+                    "value": "${DB_PORT}"
+                },
+                {
+                    "name": "DB_NAME",
+                    "value": "${DB_NAME}"
+                },
+                {
+                    "name": "APP_PORT",
+                    "value": "8070"
+                }
+            ],
+            "essential": true,
+            "image": "239153380322.dkr.ecr.us-west-1.amazonaws.com/cm-account-microservice:latest",
+            "name": "accounts",
+            "cpu": "256",
+            "memory": "512",
+            "portMappings": [
+                {
+                    "containerPort": 8070,
+                    "hostPort": 8070
+                }
+            ]
+        },
+        {
+            "environment": [
+                {
+                    "name": "ENCRYPT_SECRET_KEY",
+                    "value": "${ENCRYPT_SECRET_KEY}"
+                },
+                {
+                    "name": "JWT_SECRET_KEY",
+                    "value": "${JWT_SECRET_KEY}"
+                },
+                {
+                    "name": "DB_USERNAME",
+                    "value": "${DB_USERNAME}"
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "value": "${DB_PASSWORD}"
+                },
+                {
+                    "name": "DB_HOST",
+                    "value": "${DB_HOST}"
+                },
+                {
+                    "name": "DB_PORT",
+                    "value": "${DB_PORT}"
+                },
+                {
+                    "name": "DB_NAME",
+                    "value": "${DB_NAME}"
+                },
+                {
+                    "name": "APP_PORT",
+                    "value": "8071"
+                }
+            ],
+            "essential": true,
+            "image": "239153380322.dkr.ecr.us-west-1.amazonaws.com/cm-bank-microservice:broken",
+            "name": "banks",
+            "cpu": "256",
+            "memory": "512",
+            "portMappings": [
+                {
+                    "containerPort": 8071,
+                    "hostPort": 8071
+                }
+            ]
+        },
+        {
+            "environment": [
+                {
+                    "name": "ENCRYPT_SECRET_KEY",
+                    "value": "${ENCRYPT_SECRET_KEY}"
+                },
+                {
+                    "name": "JWT_SECRET_KEY",
+                    "value": "${JWT_SECRET_KEY}"
+                },
+                {
+                    "name": "DB_USERNAME",
+                    "value": "${DB_USERNAME}"
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "value": "${DB_PASSWORD}"
+                },
+                {
+                    "name": "DB_HOST",
+                    "value": "${DB_HOST}"
+                },
+                {
+                    "name": "DB_PORT",
+                    "value": "${DB_PORT}"
+                },
+                {
+                    "name": "DB_NAME",
+                    "value": "${DB_NAME}"
+                },
+                {
+                    "name": "APP_PORT",
+                    "value": "8072"
+                }
+            ],
+            "essential": true,
+            "image": "239153380322.dkr.ecr.us-west-1.amazonaws.com/cm-card-microservice:latest",
+            "name": "cards",
+            "cpu": "256",
+            "memory": "512",
+            "portMappings": [
+                {
+                    "containerPort": 8072,
+                    "hostPort": 8072
+                }
+            ]
+        },
+        {
+            "environment": [
+                {
+                    "name": "ENCRYPT_SECRET_KEY",
+                    "value": "${ENCRYPT_SECRET_KEY}"
+                },
+                {
+                    "name": "JWT_SECRET_KEY",
+                    "value": "${JWT_SECRET_KEY}"
+                },
+                {
+                    "name": "DB_USERNAME",
+                    "value": "${DB_USERNAME}"
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "value": "${DB_PASSWORD}"
+                },
+                {
+                    "name": "DB_HOST",
+                    "value": "${DB_HOST}"
+                },
+                {
+                    "name": "DB_PORT",
+                    "value": "${DB_PORT}"
+                },
+                {
+                    "name": "DB_NAME",
+                    "value": "${DB_NAME}"
+                },
+                {
+                    "name": "APP_PORT",
+                    "value": "8073"
+                }
+            ],
+            "essential": true,
+            "image": "239153380322.dkr.ecr.us-west-1.amazonaws.com/cm-transaction-microservice:latest",
+            "name": "transactions",
+            "cpu": "256",
+            "memory": "512",
+            "portMappings": [
+                {
+                    "containerPort": 8073,
+                    "hostPort": 8073
+                }
+            ]
+        },
+        {
+            "environment": [
+                {
+                    "name": "ENCRYPT_SECRET_KEY",
+                    "value": "${ENCRYPT_SECRET_KEY}"
+                },
+                {
+                    "name": "JWT_SECRET_KEY",
+                    "value": "${JWT_SECRET_KEY}"
+                },
+                {
+                    "name": "DB_USERNAME",
+                    "value": "${DB_USERNAME}"
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "value": "${DB_PASSWORD}"
+                },
+                {
+                    "name": "DB_HOST",
+                    "value": "${DB_HOST}"
+                },
+                {
+                    "name": "DB_PORT",
+                    "value": "${DB_PORT}"
+                },
+                {
+                    "name": "DB_NAME",
+                    "value": "${DB_NAME}"
+                },
+                {
+                    "name": "APP_PORT",
+                    "value": "8074"
+                }
+            ],
+            "essential": true,
+            "image": "239153380322.dkr.ecr.us-west-1.amazonaws.com/cm-underwriter-microservice:latest",
+            "name": "underwriter",
+            "cpu": "256",
+            "memory": "512",
+            "portMappings": [
+                {
+                    "containerPort": 8074,
+                    "hostPort": 8074
+                }
+            ]
+        },
+        {
+            "environment": [
+                {
+                    "name": "ENCRYPT_SECRET_KEY",
+                    "value": "${ENCRYPT_SECRET_KEY}"
+                },
+                {
+                    "name": "JWT_SECRET_KEY",
+                    "value": "${JWT_SECRET_KEY}"
+                },
+                {
+                    "name": "DB_USERNAME",
+                    "value": "${DB_USERNAME}"
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "value": "${DB_PASSWORD}"
+                },
+                {
+                    "name": "DB_HOST",
+                    "value": "${DB_HOST}"
+                },
+                {
+                    "name": "DB_PORT",
+                    "value": "${DB_PORT}"
+                },
+                {
+                    "name": "DB_NAME",
+                    "value": "${DB_NAME}"
+                },
+                {
+                    "name": "APP_PORT",
+                    "value": "8075"
+                }
+            ],
+            "essential": true,
+            "image": "239153380322.dkr.ecr.us-west-1.amazonaws.com/cm-user-microservice:latest",
+            "name": "users",
+            "cpu": "256",
+            "memory": "512",
+            "portMappings": [
+                {
+                    "containerPort": 8075,
+                    "hostPort": 8075
+                }
+            ]
+        }
+    ],
+    "family": "",
+    "volumes": []
+}

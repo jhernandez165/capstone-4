@@ -1,0 +1,75 @@
+---
+- hosts: 127.0.0.1
+  connection: local
+  tasks:
+  - name: deploy resources with terraform
+    community.general.terraform:
+      project_path: '../terraform-eks/'
+      force_init: true
+      state: present
+  - name: converting outputs to ansible compatible yaml
+    shell: |
+      terraform -chdir=../terraform-eks output > output.yml
+      sed -i 's/ =/:/' output.yml
+      sed -i 's/'$'\u001b''//g' output.yml
+  - include_vars: output.yml
+  - name: Kubectl config
+    shell: aws eks --region {{ region }} update-kubeconfig --name {{project}}-cluster
+  - name: check if CSI driver is already installed
+    shell: helm list --all-namespaces | grep csi-secrets-store || true
+    ignore_errors: true
+    register: csi_status
+  - name: Install Secrets Store CSI driver
+    when: csi_status.stdout | length == 0
+    shell: |
+      helm repo add secrets-store-csi-driver \
+        https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
+
+      helm install -n kube-system csi-secrets-store \
+        --set syncSecret.enabled=true \
+        --set enableSecretRotation=true \
+        secrets-store-csi-driver/secrets-store-csi-driver
+  - name: Install AWS Provider for k8s
+    shell: kubectl apply -f https://raw.githubusercontent.com/aws/secrets-store-csi-driver-provider-aws/main/deployment/aws-provider-installer.yaml
+  - name: Retrieve cluster OIDC ID
+    shell: aws eks describe-cluster --name {{project}}-cluster --query "cluster.identity.oidc.issuer" --output text | cut -d '/' -f 5
+    register: oidc
+  - name: Check if provider already exists
+    shell: aws iam list-open-id-connect-providers | grep {{oidc.stdout}} | cut -d "/" -f4
+    register: provider
+  - name: Create one if not
+    when: provider.stdout | length == 0
+    shell: eksctl utils associate-iam-oidc-provider --cluster {{project}}-cluster --region {{region}} --approve
+  - name: Create IAM service account for cluster and attach policy to retrieve DB secrets
+    shell: |
+      eksctl create iamserviceaccount \
+        --region={{region}} --name {{project}}-cluster-account  \
+        --cluster {{project}}-cluster \
+        --attach-policy-arn {{secret_policy_arn}} --approve \
+        --override-existing-serviceaccounts
+  - name: Update kubernetes configurations to use outputs from terraform
+    shell: |
+      find . -type f -exec sed -i 's/replace_sa_name/{{project}}-cluster-account/' {} +
+      sed -i 's/replace_secret_name/{{secret_name}}/' aws-secret.yaml
+    args: 
+      chdir: "../k8s"
+  - name: Deploy Kubernetes application
+    shell: |
+      kubectl create namespace argo-rollouts
+      kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
+      kubectl apply -f aws-secret.yaml
+      kubectl apply -f banks.yaml
+      kubectl apply -f accounts.yaml
+      kubectl apply -f cards.yaml
+      kubectl apply -f transactions.yaml
+      kubectl apply -f underwriter.yaml
+      kubectl apply -f users.yaml
+      kubectl apply -f account-ingress.yaml
+      kubectl apply -f bank-ingress.yaml
+      kubectl apply -f card-ingress.yaml
+      kubectl apply -f transaction-ingress.yaml
+      kubectl apply -f underwriter-ingress.yaml
+      kubectl apply -f user-ingress.yaml
+      kubectl apply -f nginx-ingress.yaml
+    args: 
+      chdir: "../k8s"

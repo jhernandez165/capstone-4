@@ -1,0 +1,163 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  annotations:
+    openshift.io/generated-by: OpenShiftNewApp
+  creationTimestamp: null
+  labels:
+    app: account-microservice
+    app.kubernetes.io/component: account-microservice
+    app.kubernetes.io/instance: account-microservice
+  name: account-microservice
+spec:
+  lookupPolicy:
+    local: false
+status:
+  dockerImageRepository: ""
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  annotations:
+    openshift.io/generated-by: OpenShiftNewApp
+  creationTimestamp: null
+  labels:
+    app: account-microservice
+    app.kubernetes.io/component: account-microservice
+    app.kubernetes.io/instance: account-microservice
+  name: account-microservice
+spec:
+  nodeSelector: null
+  output:
+    to:
+      kind: ImageStreamTag
+      name: account-microservice:latest
+  postCommit: {}
+  resources: {}
+  source:
+    git:
+      ref: develop
+      uri: https://git1.smoothstack.com/cohorts/2022/organizations/prestige-worldwide/chris-mckelvy/account-microservice.git
+    sourceSecret:
+      name: git
+    type: Git
+  strategy:
+    sourceStrategy:
+      env:
+      - name: ARTIFACT_DIR
+        value: account-microservice/target
+      from:
+        kind: ImageStreamTag
+        name: java:openjdk-8-ubi8
+        namespace: openshift
+    type: Source
+  triggers:
+  - github:
+      secret: 5B3Oa1wFqMb-tcTW5D1S
+    type: GitHub
+  - generic:
+      secret: WF0cP7gd_scXEsCriyXp
+    type: Generic
+  - type: ConfigChange
+  - imageChange: {}
+    type: ImageChange
+status:
+  lastVersion: 0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    image.openshift.io/triggers: '[{"from":{"kind":"ImageStreamTag","name":"account-microservice:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"account-microservice\")].image"}]'
+    openshift.io/generated-by: OpenShiftNewApp
+  creationTimestamp: null
+  labels:
+    app: account-microservice
+    app.kubernetes.io/component: account-microservice
+    app.kubernetes.io/instance: account-microservice
+  name: account-microservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      deployment: account-microservice
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        openshift.io/generated-by: OpenShiftNewApp
+      creationTimestamp: null
+      labels:
+        deployment: account-microservice
+    spec:
+      containers:
+      - env:
+        - name: APP_PORT
+          value: "8080"
+        - name: DB_HOST
+          value: mysql
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql
+              key: database-name
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql
+              key: database-root-password
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_USERNAME
+          value: root
+        - name: ENCRYPT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret-keys
+              key: ENCRYPT_SECRET_KEY
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret-keys
+              key: JWT_SECRET_KEY
+        image: ' '
+        name: account-microservice
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        - containerPort: 8443
+          protocol: TCP
+        - containerPort: 8778
+          protocol: TCP
+        resources: {}
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    openshift.io/generated-by: OpenShiftNewApp
+  creationTimestamp: null
+  labels:
+    app: account-microservice
+    app.kubernetes.io/component: account-microservice
+    app.kubernetes.io/instance: account-microservice
+  name: account-microservice
+spec:
+  ports:
+  - name: 8080-tcp
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  - name: 8443-tcp
+    port: 8443
+    protocol: TCP
+    targetPort: 8443
+  - name: 8778-tcp
+    port: 8778
+    protocol: TCP
+    targetPort: 8778
+  selector:
+    deployment: account-microservice
+status:
+  loadBalancer: {}

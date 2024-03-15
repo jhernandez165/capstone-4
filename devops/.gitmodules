@@ -1,0 +1,3 @@
+[submodule "aws-auto-cleanup"]
+	path = aws-auto-cleanup
+	url = https://github.com/mlevit/aws-auto-cleanup

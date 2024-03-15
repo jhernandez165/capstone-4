@@ -1,0 +1,25 @@
+pipeline {
+    agent any
+
+    tools {
+        // Install the Maven version configured as "M3" and add it to the path.
+        nodejs "node"
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                git credentialsId: '2bdffea3-3037-41c2-ac90-44a8e705c435', url: 'https://git1.smoothstack.com/cohorts/2022/organizations/prestige-worldwide/chris-mckelvy/landing-page'
+                sh 'npm install'
+                sh 'npm run build'
+            }
+            post {
+                // If Maven was able to run the tests, even if some of the test
+                // failed, record the test results and archive the jar file.
+                success {
+                    archiveArtifacts artifacts: 'build/**/*', followSymlinks: false
+                }
+            }
+        }
+    }
+}

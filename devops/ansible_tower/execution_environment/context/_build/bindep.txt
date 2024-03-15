@@ -1,0 +1,2 @@
+unzip [platform:rpm]
+openssl [platform:rpm]
